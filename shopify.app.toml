@@ -1,0 +1,23 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "5a21db085af3e5ce2d41321a88abb357"
+name = "Products Bundle"
+handle = "products-bundle-5"
+application_url = "https://products-bundles--development.gadget.app/api/shopify/install-or-render"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = false
+dev_store_url = "lautaro-app-store.myshopify.com"
+include_config_on_deploy = true
+
+[auth]
+redirect_urls = [
+  "https://products-bundles--development.gadget.app/api/connections/auth/shopify/callback"
+]
+
+[webhooks]
+api_version = "2024-04"
+
+[pos]
+embedded = false

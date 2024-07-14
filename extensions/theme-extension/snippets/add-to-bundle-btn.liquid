@@ -1,0 +1,161 @@
+{%- comment -%}
+  ----------------------------------------------------------------------------------------------------------------------
+  BUTTON COMPONENT
+  ----------------------------------------------------------------------------------------------------------------------
+
+  Generate a button (or link styled as a button). It supports wide range of attributes that can be used to customize
+  the appearance and functionality of the button.
+
+  ********************************************
+  Supported variables
+  ********************************************
+
+  * content: the content of the button
+  * href: an optional link to set. If href is provided, then an "a" tag is generated, otherwise a "button"
+  * size: can be "sm", "lg", "xl". If none is set, the default "base" size is used.
+  * background: an optional background color to use that override the default
+  * text_color: an optional text color to use that override the default
+  * style: "fill" or "outline". If none is set "fill" is assumed
+  * stretch: if passed to true, a full width button is generated
+  * secondary: if set to true the button is of secondary style
+  * subdued: if set to true, the button uses the subdued mode
+  * type: when href is empty, can be either "button" or "submit" (default to button if none is set)
+  * name: when the button is a real button, allow to set the name attribute that is submitted
+  * icon: the name of an optional icon to render along the button
+  * disabled: if set to true, the button is disabled
+  * is: set the custom element bound to the element (if any)
+  * form: the form ID that this button is linked to
+  * external: if set to true and that a href is passed, it opens into a new window
+  * aria_controls: the ID of the element controlled
+{%- endcomment -%}
+
+{% liquid
+    assign style = style | default: settings.button_style
+  
+    capture class_attribute
+      echo 'button'
+  
+      if size != blank and size != 'base'
+        echo ' button--' | append: size
+      endif
+  
+      if style == 'outline'
+        echo ' button--outline'
+      endif
+  
+      if secondary and disabled != true
+        echo ' button--secondary'
+      endif
+  
+      if subdued and background == blank and text_color == blank
+        echo ' button--subdued'
+      endif
+  
+      if stretch
+        echo ' w-full'
+      endif
+  
+      if hide
+        echo ' product-set-hidden'
+      endif
+    endcapture
+  %}
+  
+  {%- capture style_attribute -%}
+    {%- if background != blank and background != 'rgba(0,0,0,0)' -%}
+      --button-background: {{ background.rgb }} / var(--button-background-opacity, 1);
+  
+      {%- if style != 'outline' -%}
+        --button-outline-color: {{ background.rgb }};
+      {%- endif -%}
+    {%- endif -%}
+  
+    {%- if text_color != blank and text_color != 'rgba(0,0,0,0)' -%}
+      --button-text-color: {{ text_color.rgb }};
+  
+      {%- if style == 'outline' -%}
+        --button-outline-color: {{ text_color.rgb }};
+      {%- endif -%}
+    {%- endif -%}
+  {%- endcapture -%}
+  
+  {%- capture attributes -%}
+    {% if class_attribute != blank %}class="{{ class_attribute | strip_newlines | strip }}"{% endif %}
+    {% if style_attribute != blank %}style="{{ style_attribute | strip_newlines | strip }}"{% endif %}
+    {% if aria_controls %}aria-controls="{{ aria_controls }}" aria-expanded="false"{% endif %}
+    {% if disabled %}{% if href %}role="link" aria-disabled="true"{% else %}disabled{% endif %}{% endif %}
+    {% if name %}name="{{ name }}"{% endif %}
+    {% if form %}form="{{ form }}"{% endif %}
+    {% if href %}href="{{ href }}"{% endif %}
+    {% if external and href != blank %}target="_blank"{% endif %}
+    {% if href == blank %}is="{{ is | default: 'custom-button' }}"{% endif %}
+    data-js-product-add-to-cart
+  {%- endcapture -%}
+  
+  {%- capture button_content -%}
+    {{- content -}}
+  {%- endcapture -%}
+  
+  {%- form 'product', product, class: 'product-form', id: product_form_id -%}
+    <div class="product-form__wrapper">
+      <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+  
+      <div data-js-quick-buy-product-title style="display:none">
+        {{ product.title | escape }}
+      </div>
+      <div data-js-quick-buy-product-image style="display:none">
+        {{ product.featured_media | image_url }}
+      </div>
+  
+      <div
+        class="product-variants {% if unavailable_variants == 'hide' %}product-variants--hide-unavailable{% endif %}"
+        data-variants="{{ product.options_with_values.size }}"
+        data-hide-variants="
+          {%- liquid
+            if unavailable_variants == 'disable'
+              echo 'disable'
+            elsif unavailable_variants == 'show'
+              echo 'true'
+            else
+              echo 'hide'
+            endif
+          -%}
+        "
+        data-url="{{ product.url }}"
+        data-id="{{ product.selected_or_first_available_variant.id }}"
+        data-style="{{ variants_style }}"
+        data-no-history
+        {% unless default_to_first_variant_setting %}
+          data-variant-required
+        {% endunless %}
+        {% unless product.has_only_default_variant %}
+          data-has-variants
+        {% elsif product.available == false %}
+          data-unavailable
+        {% endunless %}
+        {% if defer_purchase %}
+          data-show-bundle-wording
+        {% endif %}
+      >
+        <script type="application/json">
+          {{ product.variants | json }}
+        </script>
+      </div>
+  
+      {%- if href != blank -%}
+        <a {{ attributes }} {{ block.shopify_attributes }}>
+          {{- button_content -}}
+        </a>
+      {%- else -%}
+        <button type="{{ type | default: 'button' }}" {{ attributes }} {{ block.shopify_attributes }}>
+          {% unless defer_add %}{{- button_content -}}{% endunless %}
+          {%- if defer_add -%}
+            <svg width="39" height="29" viewBox="0 0 39 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M34.5104 1.79071L37.4476 4.72792L14.929 27.2466L11.9918 24.3093L34.5104 1.79071Z" fill="none"/><path d="M17.8662 24.3093L14.929 27.2466L2.20109 14.5186L5.1383 11.5814L17.8662 24.3093Z" fill="none"/><path d="M34.864 1.43716L34.5104 1.0836L34.1569 1.43716L14.929 20.665L5.49186 11.2279L5.1383 10.8743L4.78475 11.2279L1.84754 14.1651L1.49398 14.5186L1.84754 14.8722L11.2847 24.3093L11.6382 24.6629L14.5755 27.6001L14.929 27.9537L15.2826 27.6001L18.2198 24.6629L18.5733 24.3093L37.8012 5.08148L38.1548 4.72792L37.8012 4.37437L34.864 1.43716Z" stroke="black" stroke-opacity="1" fill:none />
+            </svg>
+          {%- endif -%}
+        </button>
+      {%- endif -%}
+    </div>
+  {%- endform -%}
+  
